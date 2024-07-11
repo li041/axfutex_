@@ -1,18 +1,19 @@
 use axhal::mem::VirtAddr;
 use axprocess::{current_process, futex::FutexKey};
+use axerrno::LinuxError;
 
-use crate::{SyscallError, SyscallResult};
+use crate::waitwake::AxSyscallResult;
 
 use super::flags::FLAGS_SHARED;
 
-pub fn futex_get_value_locked(vaddr: VirtAddr) -> SyscallResult {
+pub fn futex_get_value_locked(vaddr: VirtAddr) -> AxSyscallResult {
     let process = current_process();
     if process.manual_alloc_for_lazy(vaddr).is_ok() {
         let real_futex_val = unsafe { (vaddr.as_usize() as *const u32).read_volatile() };
         Ok(real_futex_val as isize)
     }
     else {
-        Err(SyscallError::EFAULT)
+        Err(LinuxError::EFAULT)
     }
 }
 

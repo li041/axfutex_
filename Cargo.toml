@@ -21,3 +21,4 @@ axlog = { git = "https://github.com/Starry-OS/axlog.git" }
 axtask = { git = "https://github.com/Starry-OS/axtask.git" }
 axprocess = { git = "https://github.com/Starry-OS/axprocess.git" }
 axerrno = { git = "https://github.com/Starry-OS/axerrno.git" }
+async = {git = "https://github.com/Starry-OS/async.git"}

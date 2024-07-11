@@ -6,6 +6,8 @@ use core::time::Duration;
 use axprocess::{current_task, futex::{FutexQ, FUTEX_WAIT_TASK, WAIT_FOR_FUTEX}, signal::current_have_signals, yield_now_task};
 use axerrno::LinuxError;
 
+use crate::core::{futex_get_value_locked, get_futex_key};
+
 pub type AxSyscallResult = Result<isize, axerrno::LinuxError>;
 
 
