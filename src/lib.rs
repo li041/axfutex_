@@ -4,7 +4,6 @@
 
 extern crate alloc;
 
-mod futex;
-mod flags;
+pub mod flags;
 mod core;
-mod waitwake;
+pub mod waitwake;

@@ -19,6 +19,5 @@ axhal = { git = "https://github.com/Starry-OS/axhal.git" }
 log = "0.4"
 axlog = { git = "https://github.com/Starry-OS/axlog.git" }
 axtask = { git = "https://github.com/Starry-OS/axtask.git" }
-axprocess = { git = "https://github.com/Starry-OS/axprocess.git" }
 axerrno = { git = "https://github.com/Starry-OS/axerrno.git" }
 axsync = {git = "https://github.com/Starry-OS/axsync.git"}
