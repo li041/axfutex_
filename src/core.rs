@@ -1,4 +1,4 @@
-use alloc::collections::{BTreeMap, VecDeque};
+use alloc::collections::VecDeque;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use axhal::mem::VirtAddr;

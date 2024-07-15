@@ -1,13 +1,9 @@
-
-use alloc::collections::VecDeque;
 use axhal::mem::VirtAddr;
 use axlog::{info, debug};
-use axprocess::futex;
 use core::time::Duration;
 use axprocess::{current_task, futex::WAIT_FOR_FUTEX, signal::current_have_signals, yield_now_task};
 use axerrno::LinuxError;
 use crate::futex::FutexQ;
-use alloc::vec;
 
 use crate::core::{futex_get_value_locked, futex_hash, get_futex_key, FUTEXQUEUES};
 
