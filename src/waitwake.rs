@@ -9,7 +9,7 @@ use axerrno::LinuxError;
 use crate::futex::FutexQ;
 use alloc::vec;
 
-use crate::core::{futex_get_value_locked, futex_hash, get_futex_key, FUTEXQUEUES, FUTEX_WAIT_TASKS};
+use crate::core::{futex_get_value_locked, futex_hash, get_futex_key, FUTEXQUEUES};
 
 pub type AxSyscallResult = Result<isize, axerrno::LinuxError>;
 
