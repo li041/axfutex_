@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use axhal::mem::VirtAddr;
 use axprocess::current_process;
 use axerrno::LinuxError;
-use log::info;
+use axlog::info;
 use crate::futex::{FutexKey, FutexQ};
 
 use crate::waitwake::AxSyscallResult;
