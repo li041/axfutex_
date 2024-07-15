@@ -8,3 +8,4 @@ pub mod flags;
 mod core;
 pub mod waitwake;
 mod futex;
+mod jhash;

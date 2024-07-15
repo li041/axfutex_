@@ -1,4 +1,4 @@
-use alloc::collections::VecDeque;
+use alloc::collections::{BTreeMap, VecDeque};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use axhal::mem::VirtAddr;
@@ -10,8 +10,7 @@ use crate::futex::{FutexKey, FutexQ};
 use crate::waitwake::AxSyscallResult;
 
 use super::flags::FLAGS_SHARED;
-use jhash::jhash2;
-use core::mem::transmute;
+use crate::jhash::jhash2;
 use axsync::Mutex;
 use lazy_static::lazy_static;
 
@@ -20,9 +19,9 @@ const FUTEX_HASH_SIZE: usize = 256;
 
 lazy_static! {
     // can only hold the mutex through `futex_hash_bucket`
-   static ref FUTEXQUEUES: Mutex<FutexQueues> = {
+   pub static ref FUTEXQUEUES: FutexQueues = {
         info!("Initializing futex queues");
-        let mut futex_queues = FutexQueues::new(FUTEX_HASH_SIZE);
+        let futex_queues = FutexQueues::new(FUTEX_HASH_SIZE);
         futex_queues
    };
 }
@@ -44,13 +43,11 @@ impl FutexQueues {
     }
 }
 
-pub fn futex_hash_bucket(futex_key: &FutexKey) -> &Mutex<VecDeque<FutexQ>> {
-    let key = unsafe {
-        transmute::<&FutexKey, &[u32]>(futex_key)
-    };
-    let hash = jhash2(key, key[3]);
+pub fn futex_hash(futex_key: &FutexKey) -> usize{
+    let key = &[futex_key.pid, futex_key.aligned, futex_key.offset];
+    let hash = jhash2(key, key[2]);
     let index = hash as usize & (FUTEX_HASH_SIZE - 1);
-    &FUTEXQUEUES.lock().buckets[index]
+    index
 }
 
 

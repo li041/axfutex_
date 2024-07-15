@@ -2,12 +2,14 @@
 use alloc::collections::VecDeque;
 use axhal::mem::VirtAddr;
 use axlog::{info, debug};
+use axprocess::futex;
 use core::time::Duration;
 use axprocess::{current_task, futex::WAIT_FOR_FUTEX, signal::current_have_signals, yield_now_task};
 use axerrno::LinuxError;
 use crate::futex::FutexQ;
+use alloc::vec;
 
-use crate::core::{futex_get_value_locked, futex_hash_bucket, get_futex_key};
+use crate::core::{futex_get_value_locked, futex_hash, get_futex_key, FUTEXQUEUES, FUTEX_WAIT_TASKS};
 
 pub type AxSyscallResult = Result<isize, axerrno::LinuxError>;
 
@@ -25,9 +27,8 @@ pub fn futex_wait(vaddr: VirtAddr, flags: i32, expected_val: u32, deadline: Opti
             return Err(LinuxError::EAGAIN);
         }
         // 比较后相等，放入等待队列
-        let hash_bucket= futex_hash_bucket(&key).lock();
-        let cur_futexq = FutexQ::new(&key, current_task().as_task_ref().clone(), bitset);
-
+        let mut hash_bucket= FUTEXQUEUES.buckets[futex_hash(&key)].lock();
+        let cur_futexq = FutexQ::new(key, current_task().as_task_ref().clone(), bitset);
         hash_bucket.push_back(cur_futexq);
 
         // drop lock to avoid deadlock
@@ -43,8 +44,8 @@ pub fn futex_wait(vaddr: VirtAddr, flags: i32, expected_val: u32, deadline: Opti
 
         // If we were woken (and unqueued), we succeeded, whatever. 
         // We doesn't care about the reason of wakeup if we were unqueued.
-        let hash_bucket = futex_hash_bucket(&key).lock();
-        if let Some(idx) = hash_bucket.iter().position(|futex_q| *futex_q == cur_futexq) {
+        let mut hash_bucket= FUTEXQUEUES.buckets[futex_hash(&key)].lock();
+        if let Some(idx) = hash_bucket.iter().position(|futex_q| futex_q.match_key(&key)) {
             hash_bucket.remove(idx);
             if is_tiemout {
                 return Err(LinuxError::ETIMEDOUT);
@@ -66,7 +67,7 @@ pub fn futex_wake(vaddr: VirtAddr, flags: i32, nr_waken: u32) -> AxSyscallResult
     info!("[futex_wake] vaddr: {:?}, flags: {:?}, nr_waken: {:?}", vaddr, flags, nr_waken);
     let mut ret = 0;
     let key = get_futex_key(vaddr, flags);
-    let mut hash_bucket = futex_hash_bucket(&key).lock();
+    let mut hash_bucket= FUTEXQUEUES.buckets[futex_hash(&key)].lock();
     if hash_bucket.is_empty() {
         return Ok(0);
     } 
@@ -93,7 +94,7 @@ pub fn futex_wake_bitset(vaddr: VirtAddr, flags: i32, nr_waken: u32, bitset: u32
     }
     let mut ret = 0;
     let key = get_futex_key(vaddr, flags);
-    let mut hash_bucket = futex_hash_bucket(&key).lock();
+    let mut hash_bucket= FUTEXQUEUES.buckets[futex_hash(&key)].lock();
     if hash_bucket.is_empty() {
         return Ok(0);
     } 
@@ -123,14 +124,13 @@ pub fn futex_requeue(uaddr: VirtAddr, flags: i32, nr_waken: u32, uaddr2: VirtAdd
     let key = get_futex_key(uaddr, flags);
     let req_key = get_futex_key(uaddr2, flags);
 
-    let hash_bucket = futex_hash_bucket(&key);
-    let req_bucket = futex_hash_bucket(&req_key);
-
     if key == req_key {
         return futex_wake(uaddr, flags, nr_waken);
     } 
 
-    let hash_bucket = hash_bucket.lock();
+
+
+    let mut hash_bucket= FUTEXQUEUES.buckets[futex_hash(&key)].lock();
     if hash_bucket.is_empty() {
         return Ok(0);
     } 
@@ -148,7 +148,9 @@ pub fn futex_requeue(uaddr: VirtAddr, flags: i32, nr_waken: u32, uaddr2: VirtAdd
             return Ok(ret as isize);
         }
         // requeue the rest of the waiters
-        req_bucket = req_bucket.lock();
+        let mut req_bucket = FUTEXQUEUES.buckets[futex_hash(&req_key)].lock();
+        let mut futex_wait_tasks = FUTEX_WAIT_TASKS.lock();
+        //let req_wait_tasks = futex_wait_tasks.entry(req_key.pid as usize).or_default();
         while let Some(futex_q) = hash_bucket.pop_front() {
             req_bucket.push_back(futex_q); 
             requeued += 1;

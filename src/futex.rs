@@ -1,7 +1,6 @@
 use axtask::AxTaskRef;
 
 /// Kernel futex 
-#[derive(Clone, PartialEq, Eq)]
 pub struct FutexQ {
     /// The `val` of the futex
     /// the task in the queue waiting for the same futex may have different `val`
@@ -16,6 +15,10 @@ impl FutexQ {
     /// Create a new futex queue
     pub fn new(key: FutexKey, task: AxTaskRef, bitset: u32) -> Self {
         Self { key, task, bitset}
+    }
+    /// check if the futex queues matches the key
+    pub fn match_key(&self, key: &FutexKey) -> bool {
+        self.key == *key
     }
 }
 
