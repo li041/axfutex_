@@ -1,3 +1,4 @@
+use axtask::AxTaskRef;
 
 /// Kernel futex 
 #[derive(Clone, PartialEq, Eq)]
@@ -36,6 +37,6 @@ pub struct FutexKey {
 
 impl FutexKey {
     pub fn new(pid: u64, aligned: usize, offset: u32) -> Self {
-        Self { pid, aligned, offset }
+        Self { pid: pid as u32, aligned: aligned as u32, offset }
     }
 }
