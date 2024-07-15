@@ -149,8 +149,6 @@ pub fn futex_requeue(uaddr: VirtAddr, flags: i32, nr_waken: u32, uaddr2: VirtAdd
         }
         // requeue the rest of the waiters
         let mut req_bucket = FUTEXQUEUES.buckets[futex_hash(&req_key)].lock();
-        let mut futex_wait_tasks = FUTEX_WAIT_TASKS.lock();
-        //let req_wait_tasks = futex_wait_tasks.entry(req_key.pid as usize).or_default();
         while let Some(futex_q) = hash_bucket.pop_front() {
             req_bucket.push_back(futex_q); 
             requeued += 1;
