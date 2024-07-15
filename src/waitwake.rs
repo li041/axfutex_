@@ -25,13 +25,10 @@ pub fn futex_wait(vaddr: VirtAddr, flags: i32, expected_val: u32, deadline: Opti
             return Err(LinuxError::EAGAIN);
         }
         // 比较后相等，放入等待队列
-        let mut futex_wait_task = FUTEX_WAIT_TASK.lock();
-        let wait_list = futex_wait_task.get_mut(&key);
+        let hash_bucket= futex_hash_bucket(&key).lock();
+        let cur_futexq = FutexQ::new(&key, current_task().as_task_ref().clone(), bitset);
 
-        let hash_bucket= futex_hash_bucket(futex_key).lock();
-        let cur_futexq = FutexQ::new(futex_key, current_task().as_task_ref().clone(), bitset);
-
-        hash_bucket.push(cur_futexq);
+        hash_bucket.push_back(cur_futexq);
 
         // drop lock to avoid deadlock
         drop(hash_bucket);
@@ -46,8 +43,8 @@ pub fn futex_wait(vaddr: VirtAddr, flags: i32, expected_val: u32, deadline: Opti
 
         // If we were woken (and unqueued), we succeeded, whatever. 
         // We doesn't care about the reason of wakeup if we were unqueued.
-        let hash_bucket = futex_hash_bucket(futex_key).lock();
-        if let Some(idx) = hash_bucket.iter().position(|futex_q| futex_q == cur_futexq) {
+        let hash_bucket = futex_hash_bucket(&key).lock();
+        if let Some(idx) = hash_bucket.iter().position(|futex_q| *futex_q == cur_futexq) {
             hash_bucket.remove(idx);
             if is_tiemout {
                 return Err(LinuxError::ETIMEDOUT);
@@ -110,6 +107,7 @@ pub fn futex_wake_bitset(vaddr: VirtAddr, flags: i32, nr_waken: u32, bitset: u32
                 ret += 1;
                 return false;
             }
+            return true;
         })
     }
     // drop hash_bucket to avoid deadlock 
@@ -128,11 +126,11 @@ pub fn futex_requeue(uaddr: VirtAddr, flags: i32, nr_waken: u32, uaddr2: VirtAdd
     let hash_bucket = futex_hash_bucket(&key);
     let req_bucket = futex_hash_bucket(&req_key);
 
-    if hash_bucket == req_bucket {
+    if key == req_key {
         return futex_wake(uaddr, flags, nr_waken);
     } 
 
-    hash_bucket = hash_bucket.lock();
+    let hash_bucket = hash_bucket.lock();
     if hash_bucket.is_empty() {
         return Ok(0);
     } 

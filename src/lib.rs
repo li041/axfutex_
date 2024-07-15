@@ -7,5 +7,4 @@ extern crate alloc;
 pub mod flags;
 mod core;
 pub mod waitwake;
-mod hashbuckets;
 mod futex;

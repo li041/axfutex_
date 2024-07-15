@@ -1,4 +1,6 @@
 use alloc::collections::VecDeque;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use axhal::mem::VirtAddr;
 use axprocess::current_process;
 use axerrno::LinuxError;
