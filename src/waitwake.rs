@@ -156,7 +156,6 @@ pub fn futex_requeue(uaddr: VirtAddr, flags: i32, nr_waken: u32, uaddr2: VirtAdd
                 break;
             }
         }
-        Ok(ret as isize)
     }
     Ok(ret as isize)
 }
